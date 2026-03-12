@@ -1,65 +1,134 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useEffect, useState } from 'react';
+import Card from '@/components/ui/Card';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+
+interface DashboardData {
+  stats: { entityCount: number; relationCount: number; classCount: number; activeRuleCount: number };
+  classDistribution: Array<{ name: string; color: string; count: number }>;
+  recentEntities: Array<{ id: string; name: string; className: string; classIcon: string; createdAt: string }>;
+  recentLogs: Array<{ id: string; rule_name: string; affected_entity_name: string; action_summary: string; executed_at: string }>;
+}
+
+export default function DashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null);
+
+  useEffect(() => {
+    fetch('/api/dashboard').then(r => r.json()).then(setData);
+  }, []);
+
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <div className="text-gray-500">로딩 중...</div>
+      </div>
+    );
+  }
+
+  const statCards = [
+    { label: '엔티티', value: data.stats.entityCount, icon: '📦', color: '#3B82F6' },
+    { label: '관계', value: data.stats.relationCount, icon: '🔗', color: '#22C55E' },
+    { label: '클래스', value: data.stats.classCount, icon: '🏗️', color: '#8B5CF6' },
+    { label: '활성 규칙', value: data.stats.activeRuleCount, icon: '⚡', color: '#F59E0B' },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="p-4 md:p-6 space-y-6">
+      <h1 className="text-xl md:text-2xl font-bold">대시보드</h1>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {statCards.map(card => (
+          <Card key={card.label}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">{card.label}</p>
+                <p className="text-3xl font-bold mt-1" style={{ color: card.color }}>{card.value}</p>
+              </div>
+              <span className="text-3xl">{card.icon}</span>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Class Distribution Chart */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4">클래스별 엔티티 분포</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data.classDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={90}
+                  dataKey="count"
+                  nameKey="name"
+                  stroke="#0f0f0f"
+                  strokeWidth={2}
+                >
+                  {data.classDistribution.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#fff' }}
+                  formatter={(value: any, name: any) => [`${value}개`, name]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap gap-3 mt-2">
+            {data.classDistribution.map((item, i) => (
+              <div key={i} className="flex items-center gap-1.5 text-xs text-gray-400">
+                <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: item.color }} />
+                {item.name} ({item.count})
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Recent Entities */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4">최근 엔티티</h3>
+          <div className="space-y-3">
+            {data.recentEntities.map(entity => (
+              <div key={entity.id} className="flex items-center justify-between py-2 border-b border-[#2a2a2a] last:border-0">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{entity.classIcon}</span>
+                  <div>
+                    <p className="text-sm text-white font-medium">{entity.name}</p>
+                    <p className="text-xs text-gray-500">{entity.className}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Inference Logs */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">최근 추론 실행 로그</h3>
+        {data.recentLogs.length === 0 ? (
+          <p className="text-gray-500 text-sm">아직 실행된 추론 규칙이 없습니다.</p>
+        ) : (
+          <div className="space-y-2">
+            {data.recentLogs.map((log: any) => (
+              <div key={log.id} className="flex items-center justify-between py-2 border-b border-[#2a2a2a] last:border-0">
+                <div>
+                  <p className="text-sm text-white">{log.rule_name}</p>
+                  <p className="text-xs text-gray-500">{log.affected_entity_name} — {log.action_summary}</p>
+                </div>
+                <p className="text-xs text-gray-600">{log.executed_at}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
