@@ -1,15 +1,25 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [unlocking, setUnlocking] = useState(false);
+  const [phase, setPhase] = useState<'locked' | 'unlocking' | 'expanding' | 'done'>('locked');
   const [shaking, setShaking] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  const particles = useMemo(() =>
+    Array.from({ length: 15 }).map(() => ({
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 1 + Math.random() * 2,
+      dur: 5 + Math.random() * 5,
+      delay: Math.random() * 4,
+    })), []
+  );
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -26,11 +36,16 @@ export default function LoginPage() {
     });
 
     if (res.ok) {
-      setUnlocking(true);
+      // Phase 1: lock spins & turns green
+      setPhase('unlocking');
+      // Phase 2: circle expands to fill screen
+      setTimeout(() => setPhase('expanding'), 1200);
+      // Phase 3: navigate
       setTimeout(() => {
+        setPhase('done');
         router.push('/');
         router.refresh();
-      }, 2200);
+      }, 2400);
     } else {
       setShaking(true);
       setError('비밀번호가 올바르지 않습니다');
@@ -38,189 +53,227 @@ export default function LoginPage() {
     }
   };
 
+  const isUnlocking = phase === 'unlocking' || phase === 'expanding' || phase === 'done';
+  const isExpanding = phase === 'expanding' || phase === 'done';
+
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
-      {/* Background particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {Array.from({ length: 20 }).map((_, i) => (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
+      style={{ background: '#060608' }}>
+
+      {/* Subtle floating particles */}
+      <div className="absolute inset-0 pointer-events-none">
+        {particles.map((p, i) => (
           <div
             key={i}
-            className="absolute rounded-full bg-white/5"
+            className="absolute rounded-full"
             style={{
-              width: `${2 + Math.random() * 4}px`,
-              height: `${2 + Math.random() * 4}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 3}s`,
+              width: p.size, height: p.size,
+              left: `${p.x}%`, top: `${p.y}%`,
+              background: isUnlocking ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.06)',
+              animation: `pfloat ${p.dur}s ease-in-out infinite`,
+              animationDelay: `${p.delay}s`,
+              transition: 'background 1s',
             }}
           />
         ))}
       </div>
 
-      {/* Chain links - left side */}
-      <div className={`absolute left-0 top-0 h-full flex flex-col items-center justify-center transition-all duration-[1500ms] ease-in ${unlocking ? '-translate-x-full opacity-0 rotate-[-15deg]' : ''}`}>
-        {Array.from({ length: 8 }).map((_, i) => (
-          <ChainLink key={`l${i}`} delay={i * 0.05} />
-        ))}
-      </div>
+      {/* ── Expanding circle overlay (phase: expanding) ── */}
+      <div
+        className="absolute z-30 rounded-full pointer-events-none"
+        style={{
+          width: isExpanding ? '300vmax' : '0px',
+          height: isExpanding ? '300vmax' : '0px',
+          background: '#0f0f0f',
+          top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          transition: isExpanding ? 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1), height 1.2s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+        }}
+      />
 
-      {/* Chain links - right side */}
-      <div className={`absolute right-0 top-0 h-full flex flex-col items-center justify-center transition-all duration-[1500ms] ease-in ${unlocking ? 'translate-x-full opacity-0 rotate-[15deg]' : ''}`}>
-        {Array.from({ length: 8 }).map((_, i) => (
-          <ChainLink key={`r${i}`} delay={i * 0.05} />
-        ))}
-      </div>
+      {/* ── Center content ── */}
+      <div className="relative z-10 flex flex-col items-center">
 
-      {/* Horizontal chains - top */}
-      <div className={`absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-0 transition-all duration-[1500ms] ease-in ${unlocking ? '-translate-y-full opacity-0' : ''}`}>
-        {Array.from({ length: 10 }).map((_, i) => (
-          <ChainLink key={`t${i}`} horizontal delay={i * 0.04} />
-        ))}
-      </div>
-
-      {/* Horizontal chains - bottom */}
-      <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-0 transition-all duration-[1500ms] ease-in ${unlocking ? 'translate-y-full opacity-0' : ''}`}>
-        {Array.from({ length: 10 }).map((_, i) => (
-          <ChainLink key={`b${i}`} horizontal delay={i * 0.04} />
-        ))}
-      </div>
-
-      {/* Center content */}
-      <div className={`relative z-10 flex flex-col items-center transition-all duration-[2000ms] ${unlocking ? 'scale-150 opacity-0' : ''}`}>
-        {/* Lock icon */}
-        <div className={`relative mb-8 ${shaking ? 'animate-shake' : ''}`}>
-          {/* Lock body */}
-          <div className={`relative w-24 h-20 rounded-xl border-4 transition-all duration-700 ${unlocking ? 'border-emerald-400 bg-emerald-500/10' : 'border-gray-500 bg-gray-800/50'}`}>
-            {/* Keyhole */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-              <div className={`w-4 h-4 rounded-full border-3 transition-colors duration-700 ${unlocking ? 'border-emerald-400' : 'border-gray-400'}`} />
-              <div className={`w-2 h-3 -mt-0.5 transition-colors duration-700 ${unlocking ? 'bg-emerald-400' : 'bg-gray-400'}`} />
-            </div>
-
-            {/* Lock glow when unlocking */}
-            {unlocking && (
-              <div className="absolute inset-0 rounded-xl bg-emerald-400/20 animate-pulse" />
-            )}
+        {/* Orbit rings */}
+        <div className="relative w-48 h-48 flex items-center justify-center mb-8">
+          {/* Outer orbit ring 1 */}
+          <div
+            className="absolute inset-0 rounded-full border"
+            style={{
+              borderColor: isUnlocking ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.06)',
+              animation: 'orbit-spin 12s linear infinite',
+              transition: 'border-color 0.8s',
+            }}
+          >
+            <div
+              className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+              style={{
+                background: isUnlocking ? '#34d399' : 'rgba(255,255,255,0.15)',
+                boxShadow: isUnlocking ? '0 0 8px #34d399' : 'none',
+                transition: 'all 0.8s',
+              }}
+            />
           </div>
 
-          {/* Shackle (U-shape on top) */}
-          <div className={`absolute -top-10 left-1/2 -translate-x-1/2 w-16 h-14 border-4 rounded-t-full border-b-0 transition-all duration-700 ${unlocking ? 'border-emerald-400 -translate-y-4 translate-x-2 rotate-12' : 'border-gray-500'}`} />
+          {/* Outer orbit ring 2 */}
+          <div
+            className="absolute rounded-full border"
+            style={{
+              inset: '16px',
+              borderColor: isUnlocking ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.04)',
+              animation: 'orbit-spin 8s linear infinite reverse',
+              transition: 'border-color 0.8s',
+            }}
+          >
+            <div
+              className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full"
+              style={{
+                background: isUnlocking ? '#34d399' : 'rgba(255,255,255,0.1)',
+                boxShadow: isUnlocking ? '0 0 6px #34d399' : 'none',
+                transition: 'all 0.8s',
+              }}
+            />
+          </div>
 
-          {/* Spark effects when unlocking */}
-          {unlocking && (
-            <>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute top-1/2 left-1/2 w-1 h-1 bg-emerald-400 rounded-full animate-spark"
-                  style={{
-                    '--spark-angle': `${i * 45}deg`,
-                    animationDelay: `${i * 0.05}s`,
-                  } as React.CSSProperties}
-                />
-              ))}
-            </>
+          {/* Main circle border */}
+          <div
+            className={`absolute rounded-full flex items-center justify-center ${shaking ? 'lock-shake' : ''}`}
+            style={{
+              inset: '32px',
+              border: `2px solid ${isUnlocking ? '#34d399' : '#2a2a2a'}`,
+              background: isUnlocking
+                ? 'radial-gradient(circle, rgba(52,211,153,0.08) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 70%)',
+              boxShadow: isUnlocking
+                ? '0 0 30px rgba(52,211,153,0.15), inset 0 0 20px rgba(52,211,153,0.05)'
+                : '0 0 20px rgba(0,0,0,0.3)',
+              animation: isUnlocking ? 'unlock-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+              transition: 'border-color 0.6s, box-shadow 0.8s, background 0.8s',
+            }}
+          >
+            {/* Lock / Unlock icon */}
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke={isUnlocking ? '#34d399' : '#555'}
+              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ transition: 'stroke 0.6s' }}
+            >
+              {isUnlocking ? (
+                // Unlocked icon
+                <>
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                </>
+              ) : (
+                // Locked icon
+                <>
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </>
+              )}
+            </svg>
+          </div>
+
+          {/* Success checkmark (appears after unlock spin) */}
+          {isUnlocking && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="check-ring absolute rounded-full" style={{ inset: '32px' }} />
+            </div>
           )}
         </div>
 
-        {/* Title */}
-        <h1 className={`text-2xl font-bold mb-2 tracking-wider transition-colors duration-700 ${unlocking ? 'text-emerald-400' : 'text-gray-300'}`}>
-          {unlocking ? 'ACCESS GRANTED' : 'LOCKED'}
-        </h1>
-        <p className={`text-sm mb-8 transition-colors duration-700 ${unlocking ? 'text-emerald-400/60' : 'text-gray-600'}`}>
-          {unlocking ? '잠금이 해제되었습니다' : '비밀번호를 입력하여 잠금을 해제하세요'}
+        {/* Status */}
+        <p
+          className="text-xs tracking-[0.3em] uppercase font-medium mb-6"
+          style={{
+            color: isUnlocking ? '#34d399' : '#444',
+            textShadow: isUnlocking ? '0 0 12px rgba(52,211,153,0.4)' : 'none',
+            transition: 'all 0.6s',
+          }}
+        >
+          {isUnlocking ? 'Unlocked' : 'Locked'}
         </p>
 
-        {/* Password input */}
-        <form onSubmit={handleSubmit} className={`flex flex-col items-center gap-4 transition-opacity duration-500 ${unlocking ? 'opacity-0 pointer-events-none' : ''}`}>
-          <div className={`relative ${shaking ? 'animate-shake' : ''}`}>
+        {/* Password form */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col items-center gap-3"
+          style={{
+            opacity: isUnlocking ? 0 : 1,
+            transform: isUnlocking ? 'translateY(10px)' : 'translateY(0)',
+            transition: 'opacity 0.4s, transform 0.4s',
+            pointerEvents: isUnlocking ? 'none' : 'auto',
+          }}
+        >
+          <div className={`relative ${shaking ? 'lock-shake' : ''}`}>
             <input
               ref={inputRef}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              className="w-72 px-5 py-3 bg-[#1a1a1a] border-2 border-gray-700 rounded-xl text-center text-white text-lg tracking-[0.3em] placeholder:tracking-normal placeholder:text-gray-600 focus:outline-none focus:border-gray-500 transition-all"
+              placeholder="Password"
+              className="w-56 px-4 py-2.5 bg-transparent border border-[#222] rounded-full text-center text-white text-sm tracking-[0.15em] placeholder:text-[#333] focus:outline-none focus:border-[#444] transition-colors"
             />
-            {/* Subtle lock icon in input */}
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-            </div>
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm animate-fade-in">{error}</p>
+            <p className="text-red-400/70 text-xs fade-in">{error}</p>
           )}
 
           <button
             type="submit"
-            className="w-72 py-3 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl text-gray-300 font-medium transition-all hover:text-white active:scale-95"
+            className="w-56 py-2.5 bg-transparent border border-[#222] rounded-full text-[#555] text-xs font-medium tracking-wider uppercase transition-all hover:border-[#444] hover:text-[#888] active:scale-[0.97]"
           >
-            잠금 해제
+            Unlock
           </button>
         </form>
       </div>
 
       <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0); opacity: 0.3; }
-          50% { transform: translateY(-20px); opacity: 0.6; }
+        @keyframes pfloat {
+          0%, 100% { transform: translateY(0); opacity: 0.4; }
+          50% { transform: translateY(-12px); opacity: 0.7; }
         }
-        @keyframes spark {
-          0% { transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateY(0) scale(1); opacity: 1; }
-          100% { transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateY(-60px) scale(0); opacity: 0; }
+        @keyframes orbit-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
-        .animate-spark {
-          animation: spark 0.8s ease-out forwards;
+        @keyframes unlock-spin {
+          0% { transform: rotate(0deg) scale(1); }
+          50% { transform: rotate(180deg) scale(0.95); }
+          100% { transform: rotate(360deg) scale(1); }
         }
-        .animate-shake {
+        .check-ring {
+          border: 2px solid transparent;
+          animation: ring-fill 0.8s ease-out 0.3s forwards;
+        }
+        @keyframes ring-fill {
+          0% {
+            border-color: transparent;
+            clip-path: polygon(50% 0%, 50% 0%, 50% 50%, 50% 50%);
+          }
+          100% {
+            border-color: rgba(52,211,153,0.4);
+            clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%);
+          }
+        }
+        .lock-shake {
           animation: shake 0.5s ease-in-out;
         }
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
-          15% { transform: translateX(-8px); }
-          30% { transform: translateX(8px); }
-          45% { transform: translateX(-6px); }
-          60% { transform: translateX(6px); }
-          75% { transform: translateX(-3px); }
-          90% { transform: translateX(3px); }
+          20% { transform: translateX(-6px); }
+          40% { transform: translateX(6px); }
+          60% { transform: translateX(-4px); }
+          80% { transform: translateX(4px); }
         }
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
+        .fade-in {
+          animation: fi 0.3s ease-out;
         }
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out;
+        @keyframes fi {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
-    </div>
-  );
-}
-
-function ChainLink({ horizontal = false, delay = 0 }: { horizontal?: boolean; delay?: number }) {
-  return (
-    <div
-      className={`${horizontal ? 'inline-block' : ''}`}
-      style={{ animationDelay: `${delay}s` }}
-    >
-      <svg
-        width={horizontal ? 40 : 30}
-        height={horizontal ? 30 : 40}
-        viewBox="0 0 40 56"
-        fill="none"
-        className={`${horizontal ? 'rotate-90' : ''} opacity-20`}
-      >
-        <rect
-          x="6" y="4" width="28" height="48" rx="14"
-          stroke="#555"
-          strokeWidth="4"
-          fill="none"
-        />
-      </svg>
     </div>
   );
 }
