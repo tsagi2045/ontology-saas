@@ -71,7 +71,7 @@ export async function getGraphData(classFilter?: string[], predicateFilter?: str
     };
   });
 
-  return { nodes, edges };
+  return { nodes, edges, classes, predicates };
 }
 
 export async function getNeighbors(entityId: string, depth: number = 1) {

@@ -9,13 +9,18 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const entity = await queryOne('SELECT * FROM entities WHERE id = $1', [id]);
   if (!entity) return NextResponse.json({ error: '엔티티를 찾을 수 없습니다' }, { status: 404 });
 
-  const relationsRows = await query(
-    'SELECT * FROM relations WHERE source_id = $1 OR target_id = $2', [id, id]
-  );
+  // Fetch relations, predicates, and related entity names in parallel
+  const [relationsRows, predicatesRows, allEntitiesRows] = await Promise.all([
+    query('SELECT * FROM relations WHERE source_id = $1 OR target_id = $2', [id, id]),
+    query('SELECT * FROM predicate_types'),
+    query('SELECT id, name FROM entities'),
+  ]);
   const relations = relationsRows.map(rowToRelation);
-
-  const predicatesRows = await query('SELECT * FROM predicate_types');
   const predicates = predicatesRows.map(rowToPredicate);
+  const entityNameMap: Record<string, string> = {};
+  for (const row of allEntitiesRows) {
+    entityNameMap[row.id] = row.name;
+  }
 
   return NextResponse.json({
     success: true,
@@ -25,6 +30,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         ...r,
         predicate: predicates.find(p => p.id === r.predicateId),
       })),
+      relatedEntityNames: entityNameMap,
     },
   });
 }

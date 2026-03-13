@@ -159,6 +159,10 @@ function GraphCanvasInner() {
     const res = await fetch(`/api/graph?${params}`);
     const data = await res.json();
 
+    // Graph API now includes classes and predicates
+    if (data.classes) setClasses(data.classes);
+    if (data.predicates) setPredicates(data.predicates);
+
     const newNodes = data.nodes.map((n: GraphNode) => ({
       ...n,
       position: (n.data as any)?.hasSavedPosition ? n.position : { x: 0, y: 0 },
@@ -213,17 +217,7 @@ function GraphCanvasInner() {
     toast('레이아웃 재정렬 완료', 'info');
   }, [getLayoutKey, rawNodes, rawEdges, applyCurrentLayout, toast]);
 
-  // Fetch classes and predicates
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/classes').then(r => r.json()),
-      fetch('/api/predicates').then(r => r.json()),
-    ]).then(([classData, predData]) => {
-      setClasses(classData.items);
-      setPredicates(predData.items);
-    });
-  }, []);
-
+  // Single fetch: graph data includes classes & predicates
   useEffect(() => {
     fetchGraph();
   }, [fetchGraph]);

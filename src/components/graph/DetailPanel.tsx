@@ -28,18 +28,10 @@ export default function DetailPanel({ entityId, classes, predicates, onClose, on
       .then(r => r.json())
       .then(res => {
         setEntity(res.data);
-        // Fetch related entity names
-        const ids = new Set<string>();
-        for (const rel of res.data.relations || []) {
-          ids.add(rel.sourceId);
-          ids.add(rel.targetId);
+        // Use server-provided entity names (no extra API calls)
+        if (res.data.relatedEntityNames) {
+          setRelatedEntities(new Map(Object.entries(res.data.relatedEntityNames)));
         }
-        ids.delete(entityId);
-        Promise.all(
-          Array.from(ids).map(id =>
-            fetch(`/api/entities/${id}`).then(r => r.json()).then(r => [id, r.data?.name || id] as [string, string])
-          )
-        ).then(pairs => setRelatedEntities(new Map(pairs)));
       });
   }, [entityId, version]);
 
