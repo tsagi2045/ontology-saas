@@ -10,15 +10,6 @@ export async function getGraphData(classFilter?: string[], predicateFilter?: str
     entityParams.push(...classFilter);
   }
 
-  const entitiesRows = await query(entityQuery, entityParams);
-  const entities = entitiesRows.map(rowToEntity);
-  const classesRows = await query('SELECT * FROM ontology_classes');
-  const classes = classesRows.map(rowToClass);
-  const predicatesRows = await query('SELECT * FROM predicate_types');
-  const predicates = predicatesRows.map(rowToPredicate);
-
-  const entityIds = new Set(entities.map(e => e.id));
-
   let relationQuery = 'SELECT * FROM relations';
   const relationParams: any[] = [];
   if (predicateFilter && predicateFilter.length > 0) {
@@ -27,8 +18,19 @@ export async function getGraphData(classFilter?: string[], predicateFilter?: str
     relationParams.push(...predicateFilter);
   }
 
-  const allRelationsRows = await query(relationQuery, relationParams);
+  const [entitiesRows, classesRows, predicatesRows, allRelationsRows] = await Promise.all([
+    query(entityQuery, entityParams),
+    query('SELECT * FROM ontology_classes'),
+    query('SELECT * FROM predicate_types'),
+    query(relationQuery, relationParams),
+  ]);
+
+  const entities = entitiesRows.map(rowToEntity);
+  const classes = classesRows.map(rowToClass);
+  const predicates = predicatesRows.map(rowToPredicate);
   const allRelations = allRelationsRows.map(rowToRelation);
+
+  const entityIds = new Set(entities.map(e => e.id));
   const relations = allRelations.filter(r => entityIds.has(r.sourceId) && entityIds.has(r.targetId));
 
   const nodes: GraphNode[] = entities.map((entity, index) => {

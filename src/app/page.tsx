@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Card from '@/components/ui/Card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import PageLoader from '@/components/ui/PageLoader';
+import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 
 interface DashboardData {
   stats: { entityCount: number; relationCount: number; classCount: number; activeRuleCount: number };
@@ -13,15 +14,37 @@ interface DashboardData {
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(0);
 
   useEffect(() => {
     fetch('/api/dashboard').then(r => r.json()).then(setData);
   }, []);
 
+  useEffect(() => {
+    if (!chartRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setChartWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(chartRef.current);
+    return () => observer.disconnect();
+  }, [data]);
+
   if (!data) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="text-gray-500">로딩 중...</div>
+      <div className="p-4 md:p-6 space-y-6">
+        <div className="h-8 w-32 bg-[#1a1a1a] rounded animate-pulse" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-[#1a1a1a] rounded-xl animate-pulse" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-96 bg-[#1a1a1a] rounded-xl animate-pulse" />
+          <div className="h-96 bg-[#1a1a1a] rounded-xl animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -56,9 +79,9 @@ export default function DashboardPage() {
         {/* Class Distribution Chart */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">클래스별 엔티티 분포</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+          <div ref={chartRef}>
+            {chartWidth > 0 && data.classDistribution.length > 0 ? (
+              <PieChart width={chartWidth} height={256}>
                 <Pie
                   data={data.classDistribution}
                   cx="50%"
@@ -79,7 +102,9 @@ export default function DashboardPage() {
                   formatter={(value: any, name: any) => [`${value}개`, name]}
                 />
               </PieChart>
-            </ResponsiveContainer>
+            ) : data.classDistribution.length === 0 ? (
+              <div className="flex items-center justify-center h-64 text-gray-500 text-sm">데이터 없음</div>
+            ) : null}
           </div>
           <div className="flex flex-wrap gap-3 mt-2">
             {data.classDistribution.map((item, i) => (

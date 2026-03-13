@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne, execute, rowToRelation } from '@/lib/db';
-import { ensureInitialized } from '../init/route';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET() {
-  await ensureInitialized();
   const rows = await query('SELECT * FROM relations ORDER BY created_at DESC');
   const items = rows.map(rowToRelation);
   return NextResponse.json({ items, total: items.length });
 }
 
 export async function POST(request: NextRequest) {
-  await ensureInitialized();
   const body = await request.json();
 
   // Duplicate check

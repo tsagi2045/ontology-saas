@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, execute, queryOne, rowToClass } from '@/lib/db';
-import { ensureInitialized } from '../init/route';
 
 export async function GET() {
-  await ensureInitialized();
   const rows = await query('SELECT * FROM ontology_classes');
   const items = rows.map(rowToClass);
-  return NextResponse.json({ items });
+  return NextResponse.json({ items }, {
+    headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' },
+  });
 }
 
 export async function POST(request: NextRequest) {
-  await ensureInitialized();
   const body = await request.json();
 
   await execute(

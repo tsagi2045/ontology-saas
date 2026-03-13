@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
-import { ensureInitialized } from '../init/route';
 
 export async function GET() {
-  await ensureInitialized();
-
   // Run all queries in parallel
   const [entityCount, relationCount, classCount, activeRuleCount, classDistribution, recentEntitiesRows, recentLogs] = await Promise.all([
     queryOne<{ cnt: number }>('SELECT COUNT(*) as cnt FROM entities'),
@@ -43,8 +40,14 @@ export async function GET() {
       classCount: classCount?.cnt || 0,
       activeRuleCount: activeRuleCount?.cnt || 0,
     },
-    classDistribution,
+    classDistribution: classDistribution.map((row: any) => ({
+      name: row.name,
+      color: row.color,
+      count: Number(row.count),
+    })),
     recentEntities,
     recentLogs,
+  }, {
+    headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' },
   });
 }

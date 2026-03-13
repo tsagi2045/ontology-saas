@@ -7,11 +7,13 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import PageLoader from '@/components/ui/PageLoader';
 import type { OntologyClass, PredicateType } from '@/types';
 
 export default function OntologyPage() {
   const [classes, setClasses] = useState<OntologyClass[]>([]);
   const [predicates, setPredicates] = useState<PredicateType[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState<OntologyClass | null>(null);
   const [activeTab, setActiveTab] = useState<'classes' | 'predicates'>('classes');
   const [showClassModal, setShowClassModal] = useState(false);
@@ -20,8 +22,14 @@ export default function OntologyPage() {
   const [predForm, setPredForm] = useState({ id: '', name: '', inverseId: '', description: '', sourceClassIds: '', targetClassIds: '' });
 
   const fetchData = () => {
-    fetch('/api/classes').then(r => r.json()).then(d => setClasses(d.items));
-    fetch('/api/predicates').then(r => r.json()).then(d => setPredicates(d.items));
+    Promise.all([
+      fetch('/api/classes').then(r => r.json()),
+      fetch('/api/predicates').then(r => r.json()),
+    ]).then(([classData, predData]) => {
+      setClasses(classData.items);
+      setPredicates(predData.items);
+      setLoading(false);
+    });
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -100,6 +108,8 @@ export default function OntologyPage() {
     });
     setShowClassModal(true);
   };
+
+  if (loading) return <PageLoader />;
 
   return (
     <div className="p-6 space-y-4">

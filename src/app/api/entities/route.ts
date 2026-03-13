@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne, execute, rowToEntity } from '@/lib/db';
-import { ensureInitialized } from '../init/route';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(request: NextRequest) {
-  await ensureInitialized();
   const { searchParams } = new URL(request.url);
   const classId = searchParams.get('classId');
   const search = searchParams.get('search');
@@ -40,11 +38,12 @@ export async function GET(request: NextRequest) {
   const rows = await query(queryStr, params);
   const items = rows.map(rowToEntity);
 
-  return NextResponse.json({ items, total, page, pageSize });
+  return NextResponse.json({ items, total, page, pageSize }, {
+    headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' },
+  });
 }
 
 export async function POST(request: NextRequest) {
-  await ensureInitialized();
   const body = await request.json();
 
   const id = uuidv4();

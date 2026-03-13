@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query, rowToEntity, rowToRelation, rowToPredicate } from '@/lib/db';
-import { ensureInitialized } from '../../init/route';
 
 export async function GET() {
-  await ensureInitialized();
 
   const entities = (await query('SELECT * FROM entities')).map(rowToEntity);
   const relations = (await query('SELECT * FROM relations')).map(rowToRelation);

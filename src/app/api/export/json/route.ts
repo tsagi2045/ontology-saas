@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query, rowToEntity, rowToRelation, rowToClass, rowToPredicate, rowToRule } from '@/lib/db';
-import { ensureInitialized } from '../../init/route';
 
 export async function GET() {
-  await ensureInitialized();
 
   const data = {
     classes: (await query('SELECT * FROM ontology_classes')).map(rowToClass),

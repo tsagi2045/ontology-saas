@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne, execute, rowToEntity, rowToRelation, rowToPredicate } from '@/lib/db';
-import { ensureInitialized } from '../../init/route';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await ensureInitialized();
   const { id } = await params;
 
   const entity = await queryOne('SELECT * FROM entities WHERE id = $1', [id]);
@@ -36,7 +34,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await ensureInitialized();
   const { id } = await params;
   const body = await request.json();
 
@@ -60,7 +57,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await ensureInitialized();
   const { id } = await params;
 
   await execute('DELETE FROM relations WHERE source_id = $1 OR target_id = $2', [id, id]);

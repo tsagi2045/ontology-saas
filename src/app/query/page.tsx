@@ -6,10 +6,12 @@ import Select from '@/components/ui/Select';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import PageLoader from '@/components/ui/PageLoader';
 import type { OntologyClass, Entity, Relation } from '@/types';
 
 export default function QueryPage() {
   const [classes, setClasses] = useState<OntologyClass[]>([]);
+  const [loading, setLoading] = useState(true);
   const [startClassId, setStartClassId] = useState('');
   const [depth, setDepth] = useState(1);
   const [filters, setFilters] = useState<Array<{ type: string; propertyName: string; operator: string; value: string }>>([]);
@@ -17,7 +19,10 @@ export default function QueryPage() {
   const [naturalQuery, setNaturalQuery] = useState('');
 
   useEffect(() => {
-    fetch('/api/classes').then(r => r.json()).then(d => setClasses(d.items));
+    fetch('/api/classes').then(r => r.json()).then(d => {
+      setClasses(d.items);
+      setLoading(false);
+    });
   }, []);
 
   const handleQuery = async () => {
@@ -70,6 +75,8 @@ export default function QueryPage() {
   const addFilter = () => {
     setFilters([...filters, { type: 'property', propertyName: '', operator: 'eq', value: '' }]);
   };
+
+  if (loading) return <PageLoader />;
 
   return (
     <div className="p-6 space-y-6">

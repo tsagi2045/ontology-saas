@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryOne, execute, rowToRule } from '@/lib/db';
-import { ensureInitialized } from '../../init/route';
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await ensureInitialized();
   const { id } = await params;
   const body = await request.json();
 
@@ -17,7 +15,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await ensureInitialized();
   const { id } = await params;
   await execute('DELETE FROM inference_rules WHERE id = $1', [id]);
   return NextResponse.json({ success: true });

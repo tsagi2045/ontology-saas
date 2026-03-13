@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryOne, execute } from '@/lib/db';
-import { ensureInitialized } from '../../../init/route';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await ensureInitialized();
   const { id } = await params;
   const body = await request.json();
 
@@ -31,7 +29,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await ensureInitialized();
   const { id } = await params;
 
   await execute("UPDATE entities SET positions = '{}' WHERE id = $1", [id]);

@@ -37,9 +37,8 @@ export async function initializeDb() {
       icon TEXT,
       color TEXT NOT NULL DEFAULT '#6B7280',
       FOREIGN KEY (parent_class_id) REFERENCES ontology_classes(id) ON DELETE SET NULL
-    )`;
+    );
 
-  await sql`
     CREATE TABLE IF NOT EXISTS entities (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -51,9 +50,8 @@ export async function initializeDb() {
       created_at TIMESTAMP NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
       FOREIGN KEY (class_id) REFERENCES ontology_classes(id) ON DELETE CASCADE
-    )`;
+    );
 
-  await sql`
     CREATE TABLE IF NOT EXISTS predicate_types (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -61,9 +59,8 @@ export async function initializeDb() {
       source_class_ids TEXT DEFAULT '[]',
       target_class_ids TEXT DEFAULT '[]',
       description TEXT
-    )`;
+    );
 
-  await sql`
     CREATE TABLE IF NOT EXISTS relations (
       id TEXT PRIMARY KEY,
       source_id TEXT NOT NULL,
@@ -75,9 +72,8 @@ export async function initializeDb() {
       FOREIGN KEY (source_id) REFERENCES entities(id) ON DELETE CASCADE,
       FOREIGN KEY (target_id) REFERENCES entities(id) ON DELETE CASCADE,
       FOREIGN KEY (predicate_id) REFERENCES predicate_types(id) ON DELETE CASCADE
-    )`;
+    );
 
-  await sql`
     CREATE TABLE IF NOT EXISTS inference_rules (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -86,9 +82,8 @@ export async function initializeDb() {
       is_active BOOLEAN DEFAULT TRUE,
       priority INTEGER DEFAULT 0,
       description TEXT
-    )`;
+    );
 
-  await sql`
     CREATE TABLE IF NOT EXISTS inference_logs (
       id TEXT PRIMARY KEY,
       rule_id TEXT NOT NULL,
@@ -97,13 +92,13 @@ export async function initializeDb() {
       affected_entity_name TEXT,
       action_summary TEXT,
       executed_at TIMESTAMP NOT NULL DEFAULT NOW()
-    )`;
+    );
 
-  // Create indexes (IF NOT EXISTS is supported in PostgreSQL 9.5+)
-  await sql`CREATE INDEX IF NOT EXISTS idx_entities_class ON entities(class_id)`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_relations_source ON relations(source_id)`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_relations_target ON relations(target_id)`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_relations_predicate ON relations(predicate_id)`;
+    CREATE INDEX IF NOT EXISTS idx_entities_class ON entities(class_id);
+    CREATE INDEX IF NOT EXISTS idx_relations_source ON relations(source_id);
+    CREATE INDEX IF NOT EXISTS idx_relations_target ON relations(target_id);
+    CREATE INDEX IF NOT EXISTS idx_relations_predicate ON relations(predicate_id);
+  `;
 }
 
 // Helper: convert DB row to Entity

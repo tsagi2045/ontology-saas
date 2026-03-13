@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import PageLoader from '@/components/ui/PageLoader';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
@@ -16,7 +17,7 @@ import type { Entity, OntologyClass } from '@/types';
 
 export default function EntitiesPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full min-h-[400px] text-gray-500">로딩 중...</div>}>
+    <Suspense fallback={<PageLoader />}>
       <EntitiesPageInner />
     </Suspense>
   );

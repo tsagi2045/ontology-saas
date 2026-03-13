@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne, rowToEntity, rowToRelation } from '@/lib/db';
-import { ensureInitialized } from '../init/route';
 
 export async function POST(request: NextRequest) {
-  await ensureInitialized();
   const body = await request.json();
   const { startClassId, filters, depth } = body;
 

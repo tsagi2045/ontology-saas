@@ -9,12 +9,14 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import PageLoader from '@/components/ui/PageLoader';
 import type { InferenceRule, RuleCondition, RuleAction, OntologyClass, PredicateType } from '@/types';
 
 export default function RulesPage() {
   const [rules, setRules] = useState<InferenceRule[]>([]);
   const [classes, setClasses] = useState<OntologyClass[]>([]);
   const [predicates, setPredicates] = useState<PredicateType[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { confirm } = useConfirm();
   const [showBuilder, setShowBuilder] = useState(false);
@@ -33,9 +35,16 @@ export default function RulesPage() {
   });
 
   const fetchData = () => {
-    fetch('/api/rules').then(r => r.json()).then(d => setRules(d.items));
-    fetch('/api/classes').then(r => r.json()).then(d => setClasses(d.items));
-    fetch('/api/predicates').then(r => r.json()).then(d => setPredicates(d.items));
+    Promise.all([
+      fetch('/api/rules').then(r => r.json()),
+      fetch('/api/classes').then(r => r.json()),
+      fetch('/api/predicates').then(r => r.json()),
+    ]).then(([rulesData, classData, predData]) => {
+      setRules(rulesData.items);
+      setClasses(classData.items);
+      setPredicates(predData.items);
+      setLoading(false);
+    });
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -172,6 +181,8 @@ export default function RulesPage() {
       default: return JSON.stringify(a);
     }
   };
+
+  if (loading) return <PageLoader />;
 
   return (
     <div className="p-6 space-y-4">
