@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PASSWORD = process.env.SITE_PASSWORD || 'Myverse';
+const PASSWORD = process.env.SITE_PASSWORD || 'vibers';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
