@@ -10,7 +10,7 @@ export function getSQL() {
 
 export async function query<T = any>(text: string, params: any[] = []): Promise<T[]> {
   const sql = getSQL();
-  const rows = await (sql as any)(text, params);
+  const rows = await sql.query(text, params);
   return rows as T[];
 }
 
@@ -21,7 +21,7 @@ export async function queryOne<T = any>(text: string, params: any[] = []): Promi
 
 export async function execute(text: string, params: any[] = []): Promise<void> {
   const sql = getSQL();
-  await (sql as any)(text, params);
+  await sql.query(text, params);
 }
 
 export async function initializeDb() {
