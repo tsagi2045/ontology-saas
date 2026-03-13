@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { ToastProvider } from '@/components/ui/Toast';
@@ -37,6 +38,7 @@ function UndoRedoHandler() {
 }
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -44,6 +46,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   useEffect(() => {
     setMobileMenuOpen(false);
   }, []);
+
+  // Login page renders without layout chrome
+  if (pathname === '/login') {
+    return <>{children}</>;
+  }
 
   return (
     <ToastProvider>
